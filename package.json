@@ -1,6 +1,6 @@
 {
   "name": "sunruse-influx-cli",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A command-line tool to compile SUNRUSE.influx programs.",
   "main": "deploy/influx.js",
   "dependencies": {
@@ -8,7 +8,7 @@
     "yargs": "^3.24.0"
   },
   "bin": {
-    "sunruse-influx": "deploy/influx.js"
+    "sunruse-influx": "deploy/bootstrap.sh"
   },
   "devDependencies": {
     "grunt": "^0.4.5",
