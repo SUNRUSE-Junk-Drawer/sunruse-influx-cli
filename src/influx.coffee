@@ -2,8 +2,7 @@ yargs = require "yargs"
 
 configuration = yargs
 	.alias "p", "platform"
-	.describe "p", "The platform to compile for"
-	.choices "p", ["javascript", "glsl"]
+	.describe "p", "The name of a SUNRUSE.influx platform package from NPM to build for such as sunruse-influx-platforms-javascript"
 	.string "p"
 	.require "p"
 	

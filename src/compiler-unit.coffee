@@ -4,14 +4,12 @@ describe "cli", ->
 		beforeEach ->
 			compiler = require "./compiler"
 		describe "imports", ->
-			it "tokenizer", ->
-				expect(compiler.tokenizer).toBe require "./../toolchain/tokenizer"
 			it "JSON.stringify", ->
 				expect(compiler.jsonStringify).toBe JSON.stringify
 			it "fs.readFile", ->	
 				expect(compiler.fsReadFile).toBe (require "fs").readFile
-			it "findFunction", ->	
-				expect(compiler.findFunction).toBe require "./../toolchain/findFunction"				
+			it "toolchain", ->	
+				expect(compiler.toolchain).toBe require "sunruse-influx-toolchain"				
 			it "parameterBuilder", ->	
 				expect(compiler.parameterBuilder).toBe require "./parameterBuilder"				
 			it "process.stdout.write", ->	
@@ -20,16 +18,13 @@ describe "cli", ->
 				expect(compiler.processStderr).toBe process.stderr												
 			it "process.exit", ->	
 				expect(compiler.processExit).toBe process.exit	
-			it "runAssertions", ->
-				expect(compiler.runAssertions).toBe require "./../toolchain/runAssertions"
-			describe "the platform", ->
-				it "javascript", ->
-					expect(compiler.platforms.javascript).toBe require "./../platforms/javascript/types"	
+			# We can't check require was imported.
 		describe "when called", ->
-			platformInstances = runAssertions = fileContents = flushCallback = allCallbacksDone = tokenizer = configuration = platforms = jsonStringify = fsReadFile = findFunction = parameterBuilder = processStdout = processStderr = processExit = null
+			platformInstance = _require = toolchain = fileContents = flushCallback = allCallbacksDone = configuration = platforms = jsonStringify = fsReadFile = parameterBuilder = processStdout = processStderr = processExit = null
 			beforeEach ->
 				fsReadFile = compiler.fsReadFile
-				findFunction = compiler.findFunction
+				toolchain = compiler.toolchain
+				_require = compiler.require
 				parameterBuilder = compiler.parameterBuilder
 				processStdout = compiler.processStdout
 				processStderr = compiler.processStderr
@@ -37,8 +32,6 @@ describe "cli", ->
 				processExit = compiler.processExit	
 				platforms = compiler.platforms	
 				jsonStringify = compiler.jsonStringify
-				tokenizer = compiler.tokenizer
-				runAssertions = compiler.runAssertions
 			
 				configuration =
 					platform: "platformB"
@@ -74,10 +67,25 @@ describe "cli", ->
 						callbacks.push
 							filename: filename
 							callback: callback
-							
-				spyOn compiler, "findFunction"
-					.and.callFake (tokenized, input, functionName, logs, logPrefix, cache) ->
-						expect(tokenized).toBe platformInstances.platformB
+						
+				platformInstance = 							
+					primitives:
+						"test primitive a":
+							assertionPass: "platform b primitive a assertion pass"
+						"test primitive b":
+							assertionPass: "platform b primitive b assertion pass"
+						"test primitive c":
+							assertionPass: "platform b primitive c assertion pass"
+					compile: (tokenized, input, output) ->
+						expect(tokenized).toBe platformInstance
+						expect(tokenized.functions).toEqual "Test Tokenized"
+						expect(input).toEqual "Test Built Parameters"
+						expect(output).toEqual "Test Compiled Output"
+						"Test Native Code"
+						
+				compiler.toolchain = 
+					findFunction: (tokenized, input, functionName, logs, logPrefix, cache) ->
+						expect(tokenized).toBe platformInstance
 						expect(tokenized.functions).toEqual "Test Tokenized"
 						expect(input).toEqual "Test Built Parameters"
 						expect(functionName).toEqual "Test FunctionName"
@@ -88,80 +96,41 @@ describe "cli", ->
 							logs.push "Test Log B"
 							logs.push "Test Log C"
 						"Test Compiled Output"
-				spyOn compiler, "parameterBuilder"
-					.and.callFake (tokenized, parameters) ->
-						expect(tokenized).toBe platformInstances.platformB
-						expect(parameters).toEqual configuration.input
-						"Test Built Parameters"
-				compiler.processStdout = 
-					write: jasmine.createSpy()
-				compiler.processStderr = 
-					write: jasmine.createSpy()	
-				compiler.runAssertions = ->
-					expect(false).toBeTruthy()
-				spyOn compiler, "processExit"
-					.and.stub()
-				spyOn compiler, "jsonStringify"			
-				spyOn compiler, "tokenizer"
-					.and.callFake (files) ->
+					tokenizer: (files) ->
 						expect(files).toEqual
 							"Test Filename A": "Test File Content A"
 							"Test Filename B": "Test File Content B"
 							"Test Filename C": "Test File Content C"	
 						"Test Tokenized"
 						
-				platformInstances = 
-					platformA:
-						primitives:
-							"test primitive a":
-								assertionPass: "platform a primitive a assertion pass"
-							"test primitive b":
-								assertionPass: "platform a primitive b assertion pass"
-							"test primitive c":
-								assertionPass: "platform a primitive c assertion pass"
-						compile: ->
-							expect(false).toBeTruthy()
-					platformB:
-						primitives:
-							"test primitive a":
-								assertionPass: "platform b primitive a assertion pass"
-							"test primitive b":
-								assertionPass: "platform b primitive b assertion pass"
-							"test primitive c":
-								assertionPass: "platform b primitive c assertion pass"
-						compile: (tokenized, input, output) ->
-							expect(tokenized).toBe platformInstances.platformB
-							expect(tokenized.functions).toEqual "Test Tokenized"
-							expect(input).toEqual "Test Built Parameters"
-							expect(output).toEqual "Test Compiled Output"
-							"Test Native Code"
-					platformC:
-						primitives:
-							"test primitive a":
-								assertionPass: "platform c primitive a assertion pass"
-							"test primitive b":
-								assertionPass: "platform c primitive b assertion pass"
-							"test primitive c":
-								assertionPass: "platform c primitive c assertion pass"
-						compile: ->
-							expect(false).toBeTruthy()
-							
-				compiler.platforms =
-					platformA: () -> platformInstances.platformA
-					platformB: () -> platformInstances.platformB
-					platformC: () -> platformInstances.platformC
+				spyOn compiler, "parameterBuilder"
+					.and.callFake (tokenized, parameters) ->
+						expect(tokenized).toBe platformInstance
+						expect(parameters).toEqual configuration.input
+						"Test Built Parameters"
+				compiler.processStdout = 
+					write: jasmine.createSpy()
+				compiler.processStderr = 
+					write: jasmine.createSpy()	
+					
+				spyOn compiler, "processExit"
+					.and.stub()
+				spyOn compiler, "jsonStringify"		
 						
+				compiler.require = (pkg) ->
+					expect(pkg).toEqual "platformB"
+					return -> platformInstance
+											
 			afterEach ->
 				compiler.fsReadFile = fsReadFile
-				compiler.findFunction = findFunction
+				compiler.toolchain = toolchain
 				compiler.parameterBuilder = parameterBuilder
 				compiler.processStdout = processStdout
 				compiler.processStderr = processStderr
 				compiler.processExit = processExit
 				compiler.platforms = platforms
 				compiler.jsonStringify = jsonStringify
-				compiler.tokenizer = tokenizer
-				compiler.runAssertions = runAssertions
+				compiler.require = _require
 				
 			parameterTests = ->
 				it "writes to stderr when a type resolution exception occurs while building an input from parameters", ->
@@ -236,7 +205,7 @@ describe "cli", ->
 				fileTests()
 				
 				it "writes to stderr when an expected exception occurs while tokenizing", ->
-					compiler.tokenizer.and.callFake ->
+					compiler.toolchain.tokenizer = ->
 						throw
 							reason: "Test Reason"
 							line:
@@ -260,7 +229,7 @@ describe "cli", ->
 					expect(compiler.processStderr.write.calls.allArgs()).toEqual [["Failed to tokenize the source code; encountered \"Test Reason\" in file \"Test Filename\" on line 12 between columns 4 and 7."]]					
 				
 				it "writes to stderr and then rethrows when an unexpected exception occurs while tokenizing", ->
-					compiler.tokenizer.and.callFake ->
+					compiler.toolchain.tokenizer = ->
 						throw "Test Unexpected Exception"
 						
 					compiler.processStderr.write.and.callFake ->
@@ -295,8 +264,8 @@ describe "cli", ->
 						
 					describe "on success", ->
 						beforeEach ->
-							compiler.runAssertions = (_tokenized) ->
-								expect(_tokenized).toBe platformInstances.platformB
+							compiler.toolchain.runAssertions = (_tokenized) ->
+								expect(_tokenized).toBe platformInstance
 								expect(_tokenized.functions).toEqual "Test Tokenized"
 								return [
 										assertion:
@@ -308,8 +277,8 @@ describe "cli", ->
 						next()
 						
 					it "writes to stderr on failure", ->
-						compiler.runAssertions = (_tokenized) ->
-							expect(_tokenized).toBe platformInstances.platformB
+						compiler.toolchain.runAssertions = (_tokenized) ->
+							expect(_tokenized).toBe platformInstance
 							expect(_tokenized.functions).toEqual "Test Tokenized"
 							return [
 									assertion:
@@ -370,8 +339,8 @@ describe "cli", ->
 			valueTests = ->
 				assertionTests ->
 					it "writes to stderr when the function fails to compile", ->
-						compiler.findFunction.and.callFake (tokenized, input, functionName, logs, logPrefix) ->
-							expect(tokenized).toBe platformInstances.platformB
+						compiler.toolchain.findFunction = (tokenized, input, functionName, logs, logPrefix) ->
+							expect(tokenized).toBe platformInstance
 							expect(tokenized.functions).toEqual "Test Tokenized"
 								
 							expect(input).toEqual "Test Built Parameters"
@@ -397,7 +366,7 @@ describe "cli", ->
 						expect(compiler.processStderr.write.calls.allArgs()).toEqual [["Failed to compile the input specified as parameters for the function name specified.\nThe log of the pattern matches attempted follows:\nTest Log A\nTest Log B\nTest Log C"]]
 					
 					it "writes to stderr and then rethrows when an unexpected exception occurs while compiling", ->
-						compiler.findFunction.and.callFake ->
+						compiler.toolchain.findFunction = ->
 							throw "Test Unexpected Exception"
 							
 						compiler.processStderr.write.and.callFake ->
@@ -418,7 +387,7 @@ describe "cli", ->
 				valueTests()
 				
 				it "writes to stderr and then rethrows when native code generation throws an unexpected exception", ->
-					platformInstances.platformB.compile = ->
+					platformInstance.compile = ->
 						throw "Test Unexpected Exception"
 						
 					compiler.processStderr.write.and.callFake ->
@@ -508,8 +477,8 @@ describe "cli", ->
 					tokenizeTests()
 					
 					it "writes to stdout on success", ->
-						compiler.runAssertions = (_tokenized) ->
-							expect(_tokenized).toBe platformInstances.platformB
+						compiler.toolchain.runAssertions = (_tokenized) ->
+							expect(_tokenized).toBe platformInstance
 							expect(_tokenized.functions).toEqual "Test Tokenized"
 							return [
 									assertion:
@@ -542,8 +511,8 @@ describe "cli", ->
 						expect(compiler.processStdout.write.calls.allArgs()).toEqual [["Test File A\n\tLine 18 - Successful\n\tLine 24 - Successful\nTest File B\n\tLine 7 - Successful"]]	
 				
 					it "writes to stdout on failure", ->
-						compiler.runAssertions = (_tokenized) ->
-							expect(_tokenized).toBe platformInstances.platformB
+						compiler.toolchain.runAssertions = (_tokenized) ->
+							expect(_tokenized).toBe platformInstance
 							expect(_tokenized.functions).toEqual "Test Tokenized"
 							return [
 									assertion:

@@ -21,7 +21,7 @@ module.exports = (configuration) ->
 		module.exports.processStderr.write "Cannot output assertion results when assertions are disabled using -a or --run-assertions"
 		module.exports.processExit 1
 	else
-		platform = module.exports.platforms[configuration.platform]()
+		platform = (module.exports.require configuration.platform)()
 		input = undefined
 		try
 			input = module.exports.parameterBuilder platform, configuration.input
@@ -60,7 +60,7 @@ module.exports = (configuration) ->
 									else
 										tokenized = undefined
 										try
-											tokenized = module.exports.tokenizer files
+											tokenized = module.exports.toolchain.tokenizer files
 										catch error
 											if error.reason and error.line
 												module.exports.processStderr.write "Failed to tokenize the source code; encountered \"" + error.reason + "\" in file \"" + error.line.filename + "\" on line " + error.line.line + " between columns " + error.line.columns.from + " and " + error.line.columns.to + "."
@@ -75,7 +75,7 @@ module.exports = (configuration) ->
 												platform.functions = tokenized
 												assertionsFailed = false
 												if configuration.runAssertions
-													assertions = module.exports.runAssertions platform
+													assertions = module.exports.toolchain.runAssertions platform
 													grouped = {}
 													for assertion in assertions
 														filename = assertion.assertion.line.filename
@@ -106,7 +106,7 @@ module.exports = (configuration) ->
 													errorred = false
 													logs = []
 													try
-														output = module.exports.findFunction platform, input, configuration.functionName, logs, "", {}
+														output = module.exports.toolchain.findFunction platform, input, configuration.functionName, logs, "", {}
 													catch error
 														module.exports.processStderr.write "Unexpected error while compiling the source code:"
 														throw error
@@ -129,13 +129,11 @@ module.exports = (configuration) ->
 																if compiled
 																	module.exports.processStdout.write compiled
 module.exports.fsReadFile = (require "fs").readFile
-module.exports.findFunction = require "./../toolchain/findFunction"
 module.exports.parameterBuilder = require "./parameterBuilder"
-module.exports.tokenizer = require "./../toolchain/tokenizer"
+
 module.exports.processExit = process.exit
 module.exports.processStderr = process.stderr
 module.exports.processStdout = process.stdout
 module.exports.jsonStringify = JSON.stringify
-module.exports.runAssertions = require "./../toolchain/runAssertions"
-module.exports.platforms = 
-	javascript: require "./../platforms/javascript/types"
+module.exports.toolchain = require "sunruse-influx-toolchain"
+module.exports.require = require

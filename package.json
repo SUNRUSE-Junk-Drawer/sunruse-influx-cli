@@ -1,35 +1,35 @@
 {
-  "name": "sunruse.influx",
+  "name": "sunruse-influx-cli",
   "version": "0.0.0",
-  "description": "A constant time, loosely-then-statically typed, purely functional programming language.",
-  "main": "index.js",
-  "directories": {
-    "example": "examples"
-  },
+  "description": "A command-line tool to compile SUNRUSE.influx programs.",
+  "main": "deploy/influx.js",
   "dependencies": {
-    "file": "^0.2.2",
+    "sunruse-influx-toolchain": "^1.0.2",
+    "yargs": "^3.24.0"
+  },
+  "bin": {
+    "sunruse-influx": "deploy/influx.js"
+  },
+  "devDependencies": {
     "grunt": "^0.4.5",
-    "grunt-concurrent": "^2.0.3",
     "grunt-contrib-clean": "^0.6.0",
     "grunt-contrib-coffee": "^0.13.0",
     "grunt-contrib-copy": "^0.8.1",
     "grunt-contrib-watch": "^0.6.1",
     "grunt-jasmine-nodejs": "^1.4.3",
-    "grunt-webpack": "^1.0.11",
-    "jasmine-collection-matchers": "^0.1.0",
-    "rewire": "^2.3.4",
-    "webpack": "^1.11.0",
-    "webpack-dev-server": "^1.10.1",
-    "yargs": "^3.21.0"
+    "jasmine-collection-matchers": "^0.1.0"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "grunt build test",
-    "prepublish": "grunt build test deploy"
+    "prepublish": "grunt build deploy"
   },
+  "preferGlobal": true,
+  "files": [
+    "deploy"
+  ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jameswilddev/SUNRUSE.influx.git"
+    "url": "https://github.com/SUNRUSE/sunruse-influx-cli.git"
   },
   "keywords": [
     "sunruse",
@@ -44,9 +44,9 @@
     "time"
   ],
   "author": "SUNRUSE",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jameswilddev/SUNRUSE.influx/issues"
+    "url": "https://github.com/SUNRUSE/sunruse-influx-cli/issuess"
   },
-  "homepage": "https://github.com/jameswilddev/SUNRUSE.influx#readme"
+  "homepage": "https://github.com/SUNRUSE/sunruse-influx-cli"
 }
